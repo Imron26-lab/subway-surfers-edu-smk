@@ -11,6 +11,28 @@ class SoundManagerClass {
     this.bgmDucked = false;
     this.bgmTimer = null;
     this.bgmStep = 0;
+    this.unlocked = false;
+    this.setupMobileAudioUnlock();
+  }
+
+  setupMobileAudioUnlock() {
+    const unlock = () => {
+      this.init();
+      if (!this.ctx) return;
+      this.ctx.resume().then(() => {
+        // Putar buffer hening 1 sampel untuk membuka kunci Web Audio di iOS Safari (iPhone/iPad)
+        const buffer = this.ctx.createBuffer(1, 1, 22050);
+        const source = this.ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(this.ctx.destination);
+        if (source.start) source.start(0);
+        this.unlocked = true;
+      }).catch(() => {});
+    };
+
+    ['touchstart', 'touchend', 'click', 'keydown'].forEach(evt => {
+      window.addEventListener(evt, unlock, { once: true, passive: true });
+    });
   }
 
   init() {
