@@ -390,14 +390,21 @@ class SubwayGame3D {
 
     const w = this.container.clientWidth || window.innerWidth;
     const h = this.container.clientHeight || window.innerHeight;
+    this.isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || w < 768;
 
     this.camera = new THREE.PerspectiveCamera(60, w / h, 0.1, 240);
-    this.camera.position.set(0, 6.2, 10.2);
-    this.camera.lookAt(0, 2.2, -14);
+    this.baseCamY = 6.2;
+    this.baseCamZ = 10.2;
+    this.updateCameraForAspect(w, h);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({
+      antialias: !this.isMobileDevice || window.devicePixelRatio <= 2,
+      powerPreference: 'high-performance'
+    });
     this.renderer.setSize(w, h);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    // Batasi pixelRatio di HP Android/iPhone agar tetap tajam namun hemat baterai & stabil 60 FPS
+    const maxDpr = this.isMobileDevice ? 1.75 : 2;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputEncoding = THREE.sRGBEncoding;
@@ -413,8 +420,9 @@ class SubwayGame3D {
     const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.15);
     sunLight.position.set(24, 45, 28);
     sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 2048;
-    sunLight.shadow.mapSize.height = 2048;
+    const shadowRes = this.isMobileDevice ? 1024 : 2048;
+    sunLight.shadow.mapSize.width = shadowRes;
+    sunLight.shadow.mapSize.height = shadowRes;
     sunLight.shadow.camera.near = 1;
     sunLight.shadow.camera.far = 140;
     sunLight.shadow.camera.left = -22;
@@ -424,14 +432,49 @@ class SubwayGame3D {
     this.scene.add(sunLight);
 
     window.addEventListener('resize', () => this.onResize());
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => this.onResize(), 120);
+    });
+  }
+
+  /**
+   * Menyesuaikan FOV & jarak kamera secara dinamis untuk layar Portrait (HP Android & iPhone)
+   * agar ketiga jalur rel (-3.4, 0, +3.4) dan Tiang Pit Stop tetap terlihat utuh!
+   */
+  updateCameraForAspect(w, h) {
+    const aspect = w / Math.max(1, h);
+    this.camera.aspect = aspect;
+
+    if (aspect < 0.65) {
+      // Layar HP Portrait memanjang (iPhone 13/14/15/16 & Android modern 20:9 / 19.5:9)
+      this.camera.fov = 76;
+      this.baseCamY = 7.4;
+      this.baseCamZ = 12.8;
+      this.camera.position.set(0, this.baseCamY, this.baseCamZ);
+      this.camera.lookAt(0, 2.0, -15);
+    } else if (aspect < 1.0) {
+      // Layar Portrait Tablet / HP 16:9
+      this.camera.fov = 68;
+      this.baseCamY = 6.8;
+      this.baseCamZ = 11.4;
+      this.camera.position.set(0, this.baseCamY, this.baseCamZ);
+      this.camera.lookAt(0, 2.1, -14);
+    } else {
+      // Layar Landscape / Laptop / PC
+      this.camera.fov = 60;
+      this.baseCamY = 6.2;
+      this.baseCamZ = 10.2;
+      this.camera.position.set(0, this.baseCamY, this.baseCamZ);
+      this.camera.lookAt(0, 2.2, -14);
+    }
+    this.camera.updateProjectionMatrix();
   }
 
   onResize() {
     if (!this.container || !this.renderer) return;
     const w = this.container.clientWidth || window.innerWidth;
     const h = this.container.clientHeight || window.innerHeight;
-    this.camera.aspect = w / h;
-    this.camera.updateProjectionMatrix();
+    this.updateCameraForAspect(w, h);
     this.renderer.setSize(w, h);
   }
 
@@ -996,36 +1039,76 @@ class SubwayGame3D {
 
     let touchStartX = 0;
     let touchStartY = 0;
+    let swipeHandled = false;
     let lastTapTime = 0;
 
     const el = this.renderer.domElement;
+    el.style.touchAction = 'none';
+
+    // Deteksi Swipe Instan (Zero-Latency saat jari masih bergerak di layar Android & iPhone!)
     el.addEventListener('touchstart', e => {
       if (this.state !== 'RUNNING') return;
-      touchStartX = e.changedTouches[0].screenX;
-      touchStartY = e.changedTouches[0].screenY;
+      touchStartX = e.changedTouches[0].clientX;
+      touchStartY = e.changedTouches[0].clientY;
+      swipeHandled = false;
 
       const now = Date.now();
-      if (now - lastTapTime < 280) {
+      if (now - lastTapTime < 260) {
         this.activateHoverboard();
+        this.triggerHaptic(30);
+        swipeHandled = true;
       }
       lastTapTime = now;
     }, { passive: true });
 
-    el.addEventListener('touchend', e => {
+    el.addEventListener('touchmove', e => {
       if (this.state !== 'RUNNING') return;
-      const dx = e.changedTouches[0].screenX - touchStartX;
-      const dy = e.changedTouches[0].screenY - touchStartY;
+      // Cegah pull-to-refresh & rubber-band scroll di iOS Safari & Chrome Android
+      if (e.cancelable) e.preventDefault();
+      if (swipeHandled) return;
 
-      if (Math.abs(dx) < 24 && Math.abs(dy) < 24) return;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      const threshold = 22; // Sensitivitas responsif untuk layar HP
 
+      if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) return;
+
+      swipeHandled = true;
       if (Math.abs(dx) > Math.abs(dy)) {
-        if (dx > 26) this.moveLane(1);
-        else if (dx < -26) this.moveLane(-1);
+        if (dx > 0) this.moveLane(1);
+        else this.moveLane(-1);
       } else {
-        if (dy < -26) this.jump();
-        else if (dy > 26) this.roll();
+        if (dy < 0) this.jump();
+        else this.roll();
       }
+      this.triggerHaptic(12);
+    }, { passive: false });
+
+    el.addEventListener('touchend', e => {
+      if (this.state !== 'RUNNING' || swipeHandled) return;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+
+      if (Math.abs(dx) < 18 && Math.abs(dy) < 18) return;
+
+      swipeHandled = true;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 0) this.moveLane(1);
+        else this.moveLane(-1);
+      } else {
+        if (dy < 0) this.jump();
+        else this.roll();
+      }
+      this.triggerHaptic(12);
     }, { passive: true });
+  }
+
+  triggerHaptic(ms = 15) {
+    try {
+      if (navigator.vibrate) {
+        navigator.vibrate(ms);
+      }
+    } catch (e) {}
   }
 
   moveLane(dir) {
@@ -1971,9 +2054,10 @@ class SubwayGame3D {
     this.updateItems(dt, moveStep);
     this.updateParticles(dt);
 
-    // Kamera dinamis yang halus mengikuti ketinggian & lajur pemain
-    const camTargetY = 6.2 + this.playerY * 0.45;
+    // Kamera dinamis yang halus mengikuti ketinggian & lajur pemain (menyesuaikan Portrait/Landscape)
+    const camTargetY = (this.baseCamY || 6.2) + this.playerY * 0.45;
     this.camera.position.y += (camTargetY - this.camera.position.y) * Math.min(1, dt * 6);
+    this.camera.position.z = this.baseCamZ || 10.2;
 
     if (this.cameraShake > 0) {
       this.cameraShake = Math.max(0, this.cameraShake - dt * 2.5);
