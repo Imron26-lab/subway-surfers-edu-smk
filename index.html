@@ -2,7 +2,13 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SubwayEdu SMK" />
+  <link rel="manifest" href="manifest.json" />
   <title>Subway Surfers Edu - Produktif SMK Budi Agung</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -68,8 +74,8 @@
 
       <!-- PANDUAN KONTROL -->
       <div class="controls-guide-bar">
-        <div>🎮 <strong>Kontrol Lari:</strong> <span class="key-chip">A / D</span> atau <span class="key-chip">◀ ▶</span> Pindah Jalur • <span class="key-chip">W / Spasi / ▲</span> Lompat • <span class="key-chip">S / ▼</span> Merunduk (Roll) • <span class="key-chip">H</span> Hoverboard</div>
-        <div>🏁 <strong>Tiang Pit Stop Kuis:</strong> Terlihat dari jauh dengan radar jarak & pengereman halus (tidak mendadak)!</div>
+        <div>📱 <strong>HP Android & iPhone:</strong> <strong>Geser (Swipe)</strong> layar ke Kiri / Kanan / Atas (Lompat) / Bawah (Roll) • <strong>Ketuk 2x</strong> untuk Hoverboard!</div>
+        <div>💻 <strong>Laptop/PC:</strong> <span class="key-chip">A/D</span> atau <span class="key-chip">◀ ▶</span> Jalur • <span class="key-chip">W/Spasi</span> Lompat • <span class="key-chip">S</span> Roll • <span class="key-chip">H</span> Board</div>
       </div>
     </div>
   </div>
@@ -110,6 +116,7 @@
           <button type="button" id="btn-hud-hoverboard" class="hud-board-btn ready">
             🛹 <span id="hud-hoverboard-status">SIAP (H)</span>
           </button>
+          <button type="button" id="btn-hud-fullscreen" class="hud-icon-btn" title="Layar Penuh (Fullscreen)">⛶</button>
           <button type="button" id="btn-hud-sound" class="hud-icon-btn" title="Suara">🔊</button>
           <button type="button" id="btn-hud-pause" class="hud-icon-btn" title="Jeda Permainan">⏸</button>
         </div>
