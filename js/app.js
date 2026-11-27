@@ -88,6 +88,11 @@ class EduRunnerApp {
       this.togglePause();
     });
 
+    document.getElementById('btn-hud-fullscreen')?.addEventListener('click', () => {
+      window.SoundManager?.playClick();
+      this.toggleFullscreen();
+    });
+
     document.getElementById('btn-hud-sound')?.addEventListener('click', () => {
       const muted = window.SoundManager?.toggleMute();
       this.updateSoundButtons(muted);
@@ -98,12 +103,21 @@ class EduRunnerApp {
       this.game.activateHoverboard();
     });
 
-    // Tombol kontrol virtual di layar (Mobile / Klik cepat)
-    document.getElementById('ctrl-left')?.addEventListener('click', () => this.game.moveLane(-1));
-    document.getElementById('ctrl-right')?.addEventListener('click', () => this.game.moveLane(1));
-    document.getElementById('ctrl-jump')?.addEventListener('click', () => this.game.jump());
-    document.getElementById('ctrl-roll')?.addEventListener('click', () => this.game.roll());
-    document.getElementById('ctrl-board')?.addEventListener('click', () => this.game.activateHoverboard());
+    // Tombol kontrol virtual di layar (Support Touchstart Instan di Android & iPhone!)
+    const bindFastTap = (id, fn) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('touchstart', e => {
+        e.preventDefault();
+        fn();
+      }, { passive: false });
+      el.addEventListener('click', () => fn());
+    };
+    bindFastTap('ctrl-left', () => this.game.moveLane(-1));
+    bindFastTap('ctrl-right', () => this.game.moveLane(1));
+    bindFastTap('ctrl-jump', () => this.game.jump());
+    bindFastTap('ctrl-roll', () => this.game.roll());
+    bindFastTap('ctrl-board', () => this.game.activateHoverboard());
 
     // Tombol Pause Modal
     document.getElementById('btn-resume-game')?.addEventListener('click', () => {
@@ -228,6 +242,23 @@ class EduRunnerApp {
     if (btn) {
       btn.textContent = muted ? '🔇' : '🔊';
       btn.title = muted ? 'Suara Mati (Klik untuk Nyalakan)' : 'Suara Menyala';
+    }
+  }
+
+  toggleFullscreen() {
+    const doc = window.document;
+    const docEl = doc.documentElement;
+    const requestFull = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
+    const exitFull = doc.exitFullscreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+
+    if (!doc.fullscreenElement && !doc.webkitFullscreenElement) {
+      if (requestFull) {
+        requestFull.call(docEl).catch(() => {});
+      }
+    } else {
+      if (exitFull) {
+        exitFull.call(doc).catch(() => {});
+      }
     }
   }
 
