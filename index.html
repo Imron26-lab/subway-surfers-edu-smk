@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Subway Surfers Edu - Produktif SMK Budi Agung</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- KANVAS 3D THREE.JS -->
+  <div id="game-canvas-container"></div>
+
+  <!-- ======================== 1. MAIN MENU OVERLAY ======================== -->
+  <div id="main-menu-overlay" class="overlay-screen">
+    <div class="menu-container">
+      <div class="menu-header">
+        <div class="brand-title-wrap">
+          <div class="brand-logo-badge">🚄</div>
+          <div>
+            <h1 class="game-main-title">SUBWAY SURFERS EDU 3D</h1>
+            <div class="school-subtitle">EDISI PRODUKTIF SMK BUDI AGUNG • INFORMATIKA • RPL • TKJ</div>
+          </div>
+        </div>
+        <div class="menu-stats-pills">
+          <div class="stat-pill">🪙 Koin: <span id="menu-wallet-coins" class="text-gold">250</span></div>
+          <div class="stat-pill">🏆 Rekor: <span id="menu-highscore" class="text-gold">0</span></div>
+        </div>
+      </div>
+
+      <!-- PROFIL SISWA & KELAS -->
+      <div class="student-profile-bar">
+        <div class="input-group">
+          <label for="student-name-input">👤 Nama Siswa</label>
+          <input type="text" id="student-name-input" placeholder="Ketik Nama Siswa..." maxlength="32" />
+        </div>
+        <div class="input-group">
+          <label for="student-class-input">🏫 Kelas / Jurusan</label>
+          <input type="text" id="student-class-input" list="smk-class-list" placeholder="Contoh: XI TKJ 1" maxlength="20" />
+          <datalist id="smk-class-list">
+            <option value="X TKJ 1"></option>
+            <option value="X TKJ 2"></option>
+            <option value="X RPL 1"></option>
+            <option value="XI TKJ 1"></option>
+            <option value="XI TKJ 2"></option>
+            <option value="XI RPL 1"></option>
+            <option value="XII TKJ 1"></option>
+            <option value="XII TKJ 2"></option>
+            <option value="XII RPL 1"></option>
+          </datalist>
+        </div>
+        <div class="active-loadout-box">
+          <span class="hud-label">🛹 Karakter & Board Aktif</span>
+          <span id="menu-active-skin" class="loadout-value">Raka Anak TKJ + Neon Surfer</span>
+        </div>
+      </div>
+
+      <!-- PILIHAN MATA PELAJARAN (MAPEL) KUIS -->
+      <div class="section-label">📚 Pilih Mata Pelajaran (Mapel) Kuis:</div>
+      <div id="mapel-cards-grid" class="mapel-grid"></div>
+
+      <!-- TOMBOL AKSI UTAMA -->
+      <div class="menu-actions-row">
+        <button type="button" id="btn-play-game" class="btn-arcade btn-play">▶ MULAI LARI!</button>
+        <button type="button" id="btn-open-shop" class="btn-arcade btn-shop">🛒 SHOP & SKIN</button>
+        <button type="button" id="btn-open-leaderboard" class="btn-arcade btn-leaderboard">🏆 LEADERBOARD</button>
+        <button type="button" id="btn-open-editor" class="btn-arcade btn-editor">👨‍🏫 BANK SOAL GURU</button>
+      </div>
+
+      <!-- PANDUAN KONTROL -->
+      <div class="controls-guide-bar">
+        <div>🎮 <strong>Kontrol Lari:</strong> <span class="key-chip">A / D</span> atau <span class="key-chip">◀ ▶</span> Pindah Jalur • <span class="key-chip">W / Spasi / ▲</span> Lompat • <span class="key-chip">S / ▼</span> Merunduk (Roll) • <span class="key-chip">H</span> Hoverboard</div>
+        <div>🏁 <strong>Tiang Pit Stop Kuis:</strong> Terlihat dari jauh dengan radar jarak & pengereman halus (tidak mendadak)!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== 2. IN-GAME HUD ======================== -->
+  <div id="game-hud" class="hidden">
+    <div>
+      <div class="hud-top-bar">
+        <div class="hud-stats-group">
+          <div class="hud-card">
+            <div>
+              <div class="hud-label">SKOR</div>
+              <div id="hud-score" class="hud-val text-gold">0</div>
+            </div>
+            <span id="hud-multiplier" class="hud-mult-badge">x1</span>
+          </div>
+          <div class="hud-card">
+            <div>
+              <div class="hud-label">🪙 KOIN</div>
+              <div id="hud-coins" class="hud-val">0</div>
+            </div>
+          </div>
+          <div class="hud-card">
+            <div>
+              <div class="hud-label">📏 JARAK</div>
+              <div id="hud-distance" class="hud-val">0m</div>
+            </div>
+          </div>
+          <div class="hud-card">
+            <div>
+              <div class="hud-label">🧠 KUIS (<span id="hud-mapel-badge">Semua Mapel</span>)</div>
+              <div id="hud-quiz-stat" class="hud-val">0/0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hud-right-controls">
+          <button type="button" id="btn-hud-hoverboard" class="hud-board-btn ready">
+            🛹 <span id="hud-hoverboard-status">SIAP (H)</span>
+          </button>
+          <button type="button" id="btn-hud-sound" class="hud-icon-btn" title="Suara">🔊</button>
+          <button type="button" id="btn-hud-pause" class="hud-icon-btn" title="Jeda Permainan">⏸</button>
+        </div>
+      </div>
+
+      <!-- INDIKATOR POWER-UP AKTIF -->
+      <div id="hud-powerups-bar" class="hud-powerups-row"></div>
+
+      <!-- RADAR PERINGATAN TIANG PIT STOP KUIS DI DEPAN (AGAR TIDAK KAGET) -->
+      <div id="hud-pitstop-radar" class="pitstop-radar-banner hidden">
+        <div class="pitstop-radar-top">
+          <span class="pitstop-flag-icon">🏁</span>
+          <span id="pitstop-radar-label">TIANG PIT STOP KUIS DI DEPAN</span>
+          <span id="pitstop-radar-dist" class="pitstop-dist-pill">60m</span>
+        </div>
+        <div class="pitstop-progress-track">
+          <div id="pitstop-progress-fill" class="pitstop-progress-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOMBOL KONTROL CEPAT / SENTUH -->
+    <div class="hud-bottom-controls">
+      <button type="button" id="ctrl-left" class="touch-btn">◀ Kiri</button>
+      <button type="button" id="ctrl-jump" class="touch-btn">▲ Lompat</button>
+      <button type="button" id="ctrl-roll" class="touch-btn">▼ Roll</button>
+      <button type="button" id="ctrl-right" class="touch-btn">Kanan ▶</button>
+      <button type="button" id="ctrl-board" class="touch-btn">🛹 Board</button>
+    </div>
+  </div>
+
+  <!-- ======================== 3. MODAL KUIS INTERAKTIF ======================== -->
+  <div id="quiz-modal" class="modal-backdrop hidden">
+    <div class="quiz-card">
+      <div id="quiz-type-banner" class="quiz-banner bonus">🎁 MYSTERY BOX KUIS BONUS!</div>
+      <div class="quiz-body">
+        <div id="quiz-type-subtitle" class="quiz-subtitle">Jawab benar untuk hadiah +100 Koin, +500 Skor & 1 Power-Up Acak!</div>
+        <div class="quiz-meta-row">
+          <span id="quiz-category-badge" class="tag-pill">Teknik Komputer & Jaringan</span>
+          <span>⏱️ Waktu: <strong id="quiz-timer-text" class="text-gold">15s</strong></span>
+        </div>
+        <div class="timer-bar-track">
+          <div id="quiz-timer-fill" class="timer-bar-fill"></div>
+        </div>
+
+        <div id="quiz-question-text" class="quiz-question-box">Pertanyaan kuis muncul di sini...</div>
+        <div id="quiz-options-grid" class="quiz-options-grid"></div>
+
+        <!-- PEMBAHASAN SETELAH MENJAWAB -->
+        <div id="quiz-feedback-box" class="quiz-feedback-box hidden">
+          <div id="quiz-feedback-title" class="feedback-title"></div>
+          <div id="quiz-feedback-explanation" class="feedback-exp"></div>
+          <button type="button" id="btn-quiz-continue" class="btn-arcade btn-play" style="width:100%;">LANJUT BERLARI 🚀</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== 4. MODAL PAUSE ======================== -->
+  <div id="pause-modal" class="modal-backdrop hidden">
+    <div class="gameover-card">
+      <h2 style="margin-bottom:8px;">⏸ PERMAINAN DIJEDA</h2>
+      <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:18px;">Istirahat sejenak, siap melanjutkan lari dan kuis?</p>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button type="button" id="btn-resume-game" class="btn-arcade btn-play">▶ LANJUTKAN LARI</button>
+        <button type="button" id="btn-quit-to-menu" class="btn-arcade btn-leaderboard">🏠 KEMBALI KE MENU UTAMA</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== 5. MODAL GAME OVER ======================== -->
+  <div id="gameover-modal" class="modal-backdrop hidden">
+    <div class="gameover-card">
+      <div id="go-new-record-badge" class="tag-pill hidden" style="background:#f59e0b;color:#000;margin-bottom:8px;display:inline-block;">🔥 REKOR SKOR TERTINGGI BARU!</div>
+      <h2 style="font-size:1.6rem;">🏁 LARI SELESAI!</h2>
+      <div id="go-student-info" style="color:#38bdf8;font-weight:800;margin-top:4px;">Siswa SMK • XI TKJ 1</div>
+
+      <div class="summary-stats-grid">
+        <div class="summary-box">
+          <div class="hud-label">SKOR AKHIR</div>
+          <div id="go-score" class="hud-val text-gold">0</div>
+        </div>
+        <div class="summary-box">
+          <div class="hud-label">JARAK TEMPUH</div>
+          <div id="go-distance" class="hud-val">0 m</div>
+        </div>
+        <div class="summary-box">
+          <div class="hud-label">KOIN DIDAPAT</div>
+          <div id="go-coins" class="hud-val text-gold">+0</div>
+        </div>
+        <div class="summary-box">
+          <div class="hud-label">AKURASI KUIS</div>
+          <div id="go-quiz-score" class="hud-val" style="color:#22c55e;">0 / 0 (0%)</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;">
+        <button type="button" id="btn-play-again" class="btn-arcade btn-play" style="flex:1;">🔄 MAIN LAGI</button>
+        <button type="button" id="btn-gameover-menu" class="btn-arcade btn-leaderboard" style="flex:1;">🏠 MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== 6. MODAL SHOP KARAKTER & HOVERBOARD ======================== -->
+  <div id="shop-modal" class="modal-backdrop hidden">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div>
+          <h2>🛒 SHOP KARAKTER, HOVERBOARD & POWER-UP</h2>
+          <span style="font-size:0.85rem;color:#94a3b8;">Gunakan koin hasil berlari & menjawab kuis untuk membuka item!</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="stat-pill">🪙 Saldo: <span id="shop-wallet-coins" class="text-gold">0</span></div>
+          <button type="button" class="btn-close" data-close-modal="shop-modal">✖ Tutup</button>
+        </div>
+      </div>
+
+      <div class="section-label">🏃 Skin Karakter Siswa & Cyber Runner</div>
+      <div id="shop-skins-grid" class="shop-grid"></div>
+
+      <div class="section-label">🛹 Desain Hoverboard (Pelindung Anti-Tabrak)</div>
+      <div id="shop-boards-grid" class="shop-grid"></div>
+
+      <div class="section-label">⚡ Upgrade Durasi Power-Up</div>
+      <div id="shop-upgrades-grid" class="shop-grid"></div>
+    </div>
+  </div>
+
+  <!-- ======================== 7. MODAL LEADERBOARD SISWA ======================== -->
+  <div id="leaderboard-modal" class="modal-backdrop hidden">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div>
+          <h2>🏆 PAPAN PERINGKAT (LEADERBOARD) SISWA</h2>
+          <span style="font-size:0.84rem;color:#94a3b8;">Rekap skor lari dan akurasi jawaban kuis siswa</span>
+        </div>
+        <button type="button" class="btn-close" data-close-modal="leaderboard-modal">✖ Tutup</button>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;margin-bottom:14px;">
+        <div class="input-group" style="min-width:240px;">
+          <select id="leaderboard-filter-cat"></select>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button type="button" id="btn-export-csv" class="btn-mini edit" style="padding:8px 14px;">📥 Export CSV Nilai (Excel)</button>
+          <button type="button" id="btn-clear-leaderboard" class="btn-mini delete" style="padding:8px 14px;">🗑️ Reset Data</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="arcade-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Nama Siswa</th>
+              <th>Kelas</th>
+              <th>Mapel Kuis</th>
+              <th>Skor</th>
+              <th>Akurasi Kuis</th>
+              <th>Tanggal</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== 8. MODAL PANEL EDITOR SOAL GURU ======================== -->
+  <div id="editor-modal" class="modal-backdrop hidden">
+    <div class="modal-panel" style="max-width:1040px;">
+      <div class="modal-header">
+        <div>
+          <h2>👨‍🏫 PANEL BANK SOAL & MAPEL (KHUSUS GURU)</h2>
+          <span style="font-size:0.84rem;color:#94a3b8;">Tambah/edit soal sesuai mata pelajaran, tambah mapel baru, atau ekspor/impor bank soal</span>
+        </div>
+        <button type="button" class="btn-close" data-close-modal="editor-modal">✖ Tutup</button>
+      </div>
+
+      <div class="editor-layout">
+        <!-- FORM TAMBAH / EDIT SOAL -->
+        <div class="editor-form-box">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <h3 id="form-mode-title">➕ Tambah Soal Baru</h3>
+            <button type="button" id="btn-add-category" class="btn-mini edit">+ Mapel Baru</button>
+          </div>
+          <form id="question-form" style="display:flex;flex-direction:column;gap:10px;">
+            <div class="input-group">
+              <label for="q-category-input">Mata Pelajaran</label>
+              <select id="q-category-input" required></select>
+            </div>
+            <div class="input-group">
+              <label for="q-text-input">Pertanyaan Kuis</label>
+              <textarea id="q-text-input" rows="2" placeholder="Tulis pertanyaan kuis..." required></textarea>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div class="input-group">
+                <label for="q-opt-0">Pilihan A</label>
+                <input type="text" id="q-opt-0" required />
+              </div>
+              <div class="input-group">
+                <label for="q-opt-1">Pilihan B</label>
+                <input type="text" id="q-opt-1" required />
+              </div>
+              <div class="input-group">
+                <label for="q-opt-2">Pilihan C</label>
+                <input type="text" id="q-opt-2" required />
+              </div>
+              <div class="input-group">
+                <label for="q-opt-3">Pilihan D</label>
+                <input type="text" id="q-opt-3" required />
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="q-answer-input">Kunci Jawaban Benar</label>
+              <select id="q-answer-input">
+                <option value="0">Pilihan A</option>
+                <option value="1">Pilihan B</option>
+                <option value="2">Pilihan C</option>
+                <option value="3">Pilihan D</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="q-explanation-input">Pembahasan Singkat (Ditampilkan setelah siswa menjawab)</label>
+              <input type="text" id="q-explanation-input" placeholder="Penjelasan mengapa jawaban tersebut benar..." />
+            </div>
+            <div style="display:flex;gap:8px;margin-top:4px;">
+              <button type="submit" class="btn-arcade btn-play" style="flex:1;padding:10px;">💾 SIMPAN SOAL</button>
+              <button type="button" id="btn-cancel-edit" class="btn-arcade btn-shop hidden" style="padding:10px;">Batal</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- DAFTAR SOAL TERSEDIA -->
+        <div>
+          <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <select id="editor-filter-cat" style="padding:7px 10px;border-radius:8px;background:#1e293b;color:#fff;border:1px solid #475569;"></select>
+              <span id="editor-total-count" class="tag-pill">64 Soal</span>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button type="button" id="btn-export-questions" class="btn-mini edit">📤 Export JSON</button>
+              <label class="btn-mini edit" style="cursor:pointer;">
+                📥 Import JSON
+                <input type="file" id="input-import-questions" accept=".json" style="display:none;" />
+              </label>
+              <button type="button" id="btn-reset-questions" class="btn-mini delete">🔄 Reset Default</button>
+            </div>
+          </div>
+
+          <div id="editor-questions-list" class="editor-list-box"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="js/vendor/three.min.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/questions.js"></script>
+  <script src="js/game3d.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
